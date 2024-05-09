@@ -66,7 +66,7 @@ fn compileRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
 
     // No GLFW required on PLATFORM_DRM
     if (!options.platform_drm) {
-        raylib.addIncludePath(b.path("src/external/glfw/include"));
+        raylib.root_module.addIncludePath(.{ .path = "src/external/glfw/include"});
     }
 
     var c_source_files = try std.ArrayList([]const u8).initCapacity(b.allocator, 2);
@@ -119,7 +119,7 @@ fn compileRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
                         raylib.linkSystemLibrary("wayland-cursor");
                         raylib.linkSystemLibrary("wayland-egl");
                         raylib.linkSystemLibrary("xkbcommon");
-                        raylib.addIncludePath(b.path("src"));
+                        raylib.root_module.addIncludePath(.{ .path = "src"});
                         waylandGenerate(b, raylib, "wayland.xml", "wayland-client-protocol");
                         waylandGenerate(b, raylib, "xdg-shell.xml", "xdg-shell-client-protocol");
                         waylandGenerate(b, raylib, "xdg-decoration-unstable-v1.xml", "xdg-decoration-unstable-v1-client-protocol");
@@ -169,7 +169,7 @@ fn compileRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
             // On macos rglfw.c include Objective-C files.
             try raylib_flags_arr.append(b.allocator, "-ObjC");
             raylib.root_module.addCSourceFile(.{
-                .file = b.path("src/rglfw.c"),
+                .file = .{ .path = "src/rglfw.c" },
                 .flags = raylib_flags_arr.items,
             });
             _ = raylib_flags_arr.pop();
@@ -203,7 +203,7 @@ fn compileRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
     }
 
     raylib.root_module.addCSourceFiles(.{
-        .root = b.path("src"),
+        .root = .{ .path = "src" },
         .files = c_source_files.items,
         .flags = raylib_flags_arr.items,
     });
@@ -274,9 +274,9 @@ pub fn build(b: *std.Build) !void {
 
     const lib = try compileRaylib(b, target, optimize, options);
 
-    lib.installHeader(b.path("src/raylib.h"), "raylib.h");
-    lib.installHeader(b.path("src/raymath.h"), "raymath.h");
-    lib.installHeader(b.path("src/rlgl.h"), "rlgl.h");
+    lib.installHeader("src/raylib.h", "raylib.h");
+    lib.installHeader("src/raymath.h", "raymath.h");
+    lib.installHeader("src/rlgl.h", "rlgl.h");
 
     b.installArtifact(lib);
 }
@@ -289,11 +289,11 @@ fn waylandGenerate(b: *std.Build, raylib: *std.Build.Step.Compile, comptime prot
     const privateCode = basename ++ "-code.h";
 
     const client_step = b.addSystemCommand(&.{ "wayland-scanner", "client-header" });
-    client_step.addFileArg(b.path(protocolDir));
+    client_step.addFileArg(.{ .path = protocolDir });
     raylib.addIncludePath(client_step.addOutputFileArg(clientHeader).dirname());
 
     const private_step = b.addSystemCommand(&.{ "wayland-scanner", "private-code" });
-    private_step.addFileArg(b.path(protocolDir));
+    private_step.addFileArg(.{ .path = protocolDir });
     raylib.addIncludePath(private_step.addOutputFileArg(privateCode).dirname());
 
     raylib.step.dependOn(&client_step.step);
